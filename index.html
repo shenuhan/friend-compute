@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html class="h-full">
+    <head>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+        <script>
+            tailwind.config = {
+            }
+        </script>
+    </head>
+    <body class="h-full">
+        <div class="flex h-full">
+            <div class="flex-row bg-teal-700 text-gray-100 p-8">
+                <div class="text-xl p-1">Rentrez les noms possibles ici, un par ligne</div>
+                <div class="text-xl p-1 border rounded-md w-full h-40">
+                    <textarea class="bg-transparent h-full w-full list-people">
+                        
+                    </textarea>
+                </div>
+                <div class="text-xl p-1">
+                    <button class="compute p-1 px-3 border rounded-md">Calculer</button>
+                </div>
+            </div>
+            <div class="h-full">
+                <div class="text-3xl">Résultats</div>
+                <div class="flex flex-col h-full flex-wrap results">
+                </div>
+            </div>
+        </div>
+        <script>
+            const cache = {};
+            const computeNumber = (text) => {
+                if (!text || text.length <= 2) return text;
+                if (cache[text]) {
+                    return cache[text];
+                }
+
+                var result = "";
+                while(text.length > 1) {
+                    const firstdigit = +(text[0]);
+                    const lastdigit = +(text[text.length-1]);
+                    result = result + (firstdigit + lastdigit);
+                    text = text.substring(1, text.length - 1);
+                }
+                const finalResult = computeNumber(result + text);
+                cache[text] = finalResult;
+                return finalResult;
+            }
+            const computeText = (text) => {
+                if (!text) return "";
+                const firstLetter = text[0];
+                const length = text.length;
+                text = text.replaceAll(firstLetter, "");
+                return computeNumber("" + (length - text.length) + computeText(text));
+            }
+
+            const executeForNElement = (list, nb, callback, currentList) => {
+                //console.log(list, nb, currentList);
+                currentList = currentList || [];
+                if (list.length < nb) return;
+                if (nb === 0) {
+                    return callback(currentList);
+                }
+                for (var i = 0; i < list.length; i++) {
+                    var element = list.splice(i, 1);
+                    executeForNElement(list, nb - 1, callback, currentList.concat(element));
+                    list.splice(i, 0, ...element);
+                }
+            };
+
+            $(".compute").click(() => {
+                var people = $(".list-people").val();
+                people = people.toLowerCase().split('\n').map(l => l.replace(/\s/g, ""));
+                people = people.filter(p => !!p);
+
+                
+                $('.results fieldset').remove();
+                for (var nb = 2; nb <= Math.min(people.length, 6); nb++) {
+                    var best = 0;
+                    var bestpeople;
+                    var worst = 10000000;
+                    var worstpeople;
+                    executeForNElement(people, nb, (selected) => {
+                        const result = computeText(selected.join(""));
+                        if (result > best) {
+                            best = result;
+                            bestpeople = '<h1>Score : ' + result + '</h1><div>' + selected.join('</div><div>') + '</div>';
+                        }
+                        if (result < worst) {
+                            worst = result;
+                            worstpeople = '<h1>Score : ' + result + '</h1><div>' + selected.join('</div><div>') + '</div>';
+                        }
+                    });
+                    var best = `<fieldset class="best-${nb} border rounded-md border-solid border-gray-300 p-3 m-3">
+                        <legend class="text-xl">Meilleur de ${nb}</legend>
+                        <div class="result">
+                            ${bestpeople}
+                        </div>
+                    </fieldset>`;
+                    var worst = `<fieldset class="worst-${nb} border rounded-md border-solid border-gray-300 p-3 m-3">
+                        <legend class="text-xl">Pire de ${nb}</legend>
+                        <div class="result">
+                            ${worstpeople}
+                        </div>
+                    </fieldset>`;
+                    $('.results').append($(best))
+                    $('.results').append($(worst))
+                }
+
+
+            })
+        </script>
+    </body>
+</html>
